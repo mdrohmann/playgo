@@ -51,6 +51,22 @@ func resetCounter() {
 	}
 }
 
+func getChannelCount() {
+
+	c, err := net.Dial("tcp", "127.0.0.1:2000")
+	if err != nil {
+		log.Fatalf("Could not connect: %s\n", err)
+	}
+	defer c.Close()
+	fmt.Println("Connection established.")
+	if _, stop := sendCommand(c, "getChannelCount total"); stop {
+		log.Println("stopped")
+	}
+	if _, stop := sendCommand(c, "STOP"); stop {
+		log.Println("stopped")
+	}
+}
+
 func connect(i int) {
 	c, err := net.Dial("tcp", "127.0.0.1:2000")
 	if err != nil {
@@ -89,4 +105,5 @@ func main() {
 		}(i)
 	}
 	wg.Wait()
+	getChannelCount()
 }

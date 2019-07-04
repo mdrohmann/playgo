@@ -17,8 +17,9 @@ type server struct {
 	commands map[string]commandHandler
 	count    int32
 
-	countChan chan int
-	resetChan chan int
+	countChan    chan int
+	getCountChan chan int
+	resetChan    chan int
 }
 
 func newServer() *server {
@@ -27,16 +28,18 @@ func newServer() *server {
 
 	s.countChan = make(chan int)
 	s.resetChan = make(chan int)
+	s.getCountChan = make(chan int)
 
 	go func() {
-		channelCount := 0
+		var channelCount int
+		channelCount = 0
 		for {
 			select {
 			case v := <-s.resetChan:
 				channelCount = v
 			case addend := <-s.countChan:
 				channelCount += addend
-				s.countChan <- channelCount
+				s.getCountChan <- channelCount
 			}
 		}
 	}()
@@ -58,7 +61,11 @@ func newServer() *server {
 	}
 	s.commands["addChannel"] = func(t string) string {
 		s.countChan <- 1
-		return fmt.Sprintf("New channel count for %s is %d\n", t, <-s.countChan)
+		return fmt.Sprintf("New channel count for %s is %d\n", t, <-s.getCountChan)
+	}
+	s.commands["getChannelCount"] = func(t string) string {
+		s.countChan <- 0
+		return fmt.Sprintf("Channel count for %s is %d\n", t, <-s.getCountChan)
 	}
 	s.commands["reset"] = func(_ string) string {
 		atomic.StoreInt32(&(s.count), 0)
