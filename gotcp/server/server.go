@@ -33,15 +33,21 @@ func newServer() *server {
 	go func() {
 		var channelCount int
 		channelCount = 0
+	outerLoop:
 		for {
 			select {
 			case v := <-s.resetChan:
+				if v == -1 {
+					log.Print("break out of outer loop")
+					break outerLoop
+				}
 				channelCount = v
 			case addend := <-s.countChan:
 				channelCount += addend
 				s.getCountChan <- channelCount
 			}
 		}
+		log.Println("Leaving channel count go-routine.")
 	}()
 
 	s.commands["echo"] = func(t string) string {
@@ -75,7 +81,16 @@ func newServer() *server {
 	s.commands["STOP"] = func(t string) string {
 		return "Closing connection\n"
 	}
+	s.commands["CLOSE"] = func(t string) string {
+		return "Shutting down server\n"
+	}
 	return &s
+}
+
+func (s *server) close() {
+	log.Print("closing server struct")
+	s.resetChan <- -1
+
 }
 
 func (s *server) tcpServerListen() {
@@ -88,12 +103,25 @@ func (s *server) tcpServerListen() {
 	}
 	defer l.Close()
 
+	closeServer := make(chan bool, 1)
+
 	for {
 		// wait for a connection
 
+		select {
+		case cl := <-closeServer:
+			log.Print("Closing server.")
+			if cl {
+				return
+			}
+		default:
+			log.Print("Accepting new connections.")
+		}
+
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatal("Error on accepting the connection", err)
+			log.Print("Error on accepting the connection: ", err)
+			continue
 		}
 		go func(c net.Conn) {
 			log.Print("Received some data")
@@ -126,6 +154,11 @@ func (s *server) tcpServerListen() {
 				if trimmed == "STOP" {
 					break
 				}
+				if trimmed == "CLOSE" {
+					closeServer <- true
+					l.Close()
+					break
+				}
 			}
 		}(conn)
 	}
@@ -134,6 +167,7 @@ func (s *server) tcpServerListen() {
 func main() {
 
 	s := newServer()
+	defer s.close()
 	s.tcpServerListen()
 
 }
