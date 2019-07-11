@@ -5,7 +5,9 @@ package cgospy
 import "C"
 import (
 	"fmt"
-	// "unsafe"
+	"image"
+	"image/color"
+	"unsafe"
 )
 
 // CgoSpy manages a capture session
@@ -19,8 +21,44 @@ func New(device int) *CgoSpy {
 }
 
 // CvMat wraps an OpenCV matrix structure
+// I also implements the image Image interface
 type CvMat struct {
 	ptr C.CvMatrix
+}
+
+// ColorModel currently always returns GrayModel
+func (m *CvMat) ColorModel() color.Model {
+	return color.GrayModel
+}
+
+// Size returns the size of a CV array
+func (m *CvMat) Size() []int {
+	sizeLen := int32(0)
+	intArray := C.cvMatrixSize(m.ptr, (*_Ctype_int)(&sizeLen))
+	res := make([]int, sizeLen)
+	slice := (*[1 << 28]C.CInt)(unsafe.Pointer(intArray))[:sizeLen:sizeLen]
+	for i := int32(0); i < sizeLen; i++ {
+		res[i] = int(slice[i])
+	}
+	// C.free(unsafe.Pointer(intArray))
+	return res
+}
+
+// Bounds returns the bounds of the image
+func (m *CvMat) Bounds() image.Rectangle {
+
+	s := m.Size()
+	if len(s) != 2 {
+		panic(fmt.Sprintf("Expected matrix dimension to be 2, was: %d", len(s)))
+	}
+
+	return image.Rectangle{Min: image.Point{0, 0}, Max: image.Point{s[1], s[0]}}
+}
+
+// At returns the color value at a specific position
+func (m *CvMat) At(x, y int) color.Color {
+	colorAtPoint := C.cvMatAt(m.ptr, C.int(x), C.int(y))
+	return color.Gray{uint8(colorAtPoint)}
 }
 
 // CaptureCvMat captures a matrix representation of an image.

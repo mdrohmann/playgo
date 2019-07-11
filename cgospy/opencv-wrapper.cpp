@@ -5,6 +5,17 @@ extern "C"
 
   CvMatrix newCvMat() { return new cv::Mat(); }
 
+  int cvMatAt(CvMatrix m, int x, int y) {
+    return m->at<uint8_t>(cv::Point2i(x, y));
+  }
+
+  int* cvMatrixSize(CvMatrix m, int* len)
+  {
+    cv::MatSize mSize = m->size;
+    *len = m->dims;
+    return mSize.p;
+  }
+
   int captureImage(int device, CvMatrix edges)
   {
     cv::VideoCapture cap(device);
@@ -28,9 +39,10 @@ extern "C"
     }
   }
 
-   void imShow(CvMatrix mat) {
-       cv::imshow("cheese", *mat);
-       cv::waitKey(0);
-       cv::destroyAllWindows();
-   }
+  void imShow(CvMatrix mat)
+  {
+    cv::imshow("cheese", *mat);
+    cv::waitKey(0);
+    cv::destroyAllWindows();
+  }
 }
