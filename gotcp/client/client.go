@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -67,7 +68,7 @@ func getChannelCount() {
 	}
 }
 
-func connect(i int) {
+func connect(i int, atomicCount, channelCount bool, wait int) {
 	c, err := net.Dial("tcp", "127.0.0.1:2000")
 	if err != nil {
 		log.Fatalf("Could not connect: %s\n", err)
@@ -78,14 +79,20 @@ func connect(i int) {
 	if _, stop := sendCommand(c, "echo hi"); stop {
 		log.Println("stopped")
 	}
-	if _, stop := sendCommand(c, "wait 1"); stop {
-		log.Println("stopped")
+	if wait > 0 {
+		if _, stop := sendCommand(c, fmt.Sprintf("wait %d", wait)); stop {
+			log.Println("stopped")
+		}
 	}
-	if _, stop := sendCommand(c, "add"); stop {
-		log.Println("stopped")
+	if atomicCount {
+		if _, stop := sendCommand(c, "add"); stop {
+			log.Println("stopped")
+		}
 	}
-	if _, stop := sendCommand(c, fmt.Sprintf("addChannel %d", i)); stop {
-		log.Println("stopped")
+	if channelCount {
+		if _, stop := sendCommand(c, fmt.Sprintf("addChannel %d", i)); stop {
+			log.Println("stopped")
+		}
 	}
 	if _, stop := sendCommand(c, "STOP"); stop {
 		log.Println("stopped")
@@ -94,14 +101,21 @@ func connect(i int) {
 }
 
 func main() {
+
+	atomicCount := flag.Bool("atomic", true, "whether to count atomically")
+	channelCount := flag.Bool("channel", true, "whether to count with channel sync")
+	wait := flag.Int("wait", 1, "how long to wait in seconds")
+	var n int
+	flag.IntVar(&n, "conns", 100, "how many connections to spawn")
+	flag.Parse()
 	resetCounter()
+
 	var wg sync.WaitGroup
-	n := 1000
 	wg.Add(n)
 	for i := 0; i < n; i++ {
 		go func(i int) {
 			defer wg.Done()
-			connect(i)
+			connect(i, *atomicCount, *channelCount, *wait)
 		}(i)
 	}
 	wg.Wait()

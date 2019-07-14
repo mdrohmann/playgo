@@ -44,6 +44,7 @@ func newServer() *server {
 				channelCount = v
 			case addend := <-s.countChan:
 				channelCount += addend
+				log.Printf("new channel count: %d", channelCount)
 				s.getCountChan <- channelCount
 			}
 		}
@@ -70,8 +71,11 @@ func newServer() *server {
 		return fmt.Sprintf("New channel count for %s is %d\n", t, <-s.getCountChan)
 	}
 	s.commands["getChannelCount"] = func(t string) string {
+		fmt.Println("in getChannelCount")
 		s.countChan <- 0
-		return fmt.Sprintf("Channel count for %s is %d\n", t, <-s.getCountChan)
+		fmt.Println("in getChannelCount 2")
+		res := <-s.getCountChan
+		return fmt.Sprintf("Channel count for %s is %d; Atomic count is %d\n", t, res, s.count)
 	}
 	s.commands["reset"] = func(_ string) string {
 		atomic.StoreInt32(&(s.count), 0)
@@ -146,7 +150,7 @@ func (s *server) tcpServerListen() {
 						response = handler(hArg)
 					}
 				}
-				log.Printf("Read %d bytes: %q", n, trimmed)
+				log.Printf("Read %d bytes: %q; response: %q", n, trimmed, response)
 				_, err = c.Write([]byte(response))
 				if err != nil {
 					log.Print("error writing bytes", err)
