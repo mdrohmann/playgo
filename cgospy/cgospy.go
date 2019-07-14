@@ -35,8 +35,8 @@ func (m *CvMat) ColorModel() color.Model {
 func (m *CvMat) Size() []int {
 	sizeLen := int32(0)
 	intArray := C.cvMatrixSize(m.ptr, (*_Ctype_int)(&sizeLen))
-	res := make([]int, sizeLen)
 	slice := (*[1 << 28]C.CInt)(unsafe.Pointer(intArray))[:sizeLen:sizeLen]
+	res := make([]int, sizeLen)
 	for i := int32(0); i < sizeLen; i++ {
 		res[i] = int(slice[i])
 	}
@@ -48,7 +48,12 @@ func (m *CvMat) Size() []int {
 func (m *CvMat) Bounds() image.Rectangle {
 
 	s := m.Size()
+
+	// check if matrix has two dimensions
 	if len(s) != 2 {
+		// We have to panic here in order to fulfill the image.Image()
+		// interface.  An error check should be made earlier if you are
+		// really unsure if the matrix has more than two dimensions.
 		panic(fmt.Sprintf("Expected matrix dimension to be 2, was: %d", len(s)))
 	}
 
