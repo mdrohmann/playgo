@@ -1,15 +1,13 @@
-package cgospy_test
+package miniopencv_test
 
 import (
-	"github.com/mdrohmann/playgo/cgospy"
+	"github.com/mdrohmann/playgo/cgospy/miniopencv"
 	"image/color"
-	"image/png"
-	"os"
 	"testing"
 )
 
 func TestCapture(t *testing.T) {
-	mini := cgospy.New(0)
+	mini := miniopencv.New(0)
 	m, err := mini.CaptureCvMat()
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
@@ -37,17 +35,6 @@ func TestCapture(t *testing.T) {
 		}
 		if !anyUnequalZero {
 			t.Errorf("Expected to have at least one value unequal zero")
-		}
-	})
-
-	t.Run("CvMat behaves like an image encode-able to a png file.", func(t *testing.T) {
-		f, err := os.Create("test.png")
-		defer f.Close()
-		if err != nil {
-			t.Fatalf("Expected to be able to create the output png file, but received error: %s", err)
-		}
-		if err = png.Encode(f, m); err != nil {
-			t.Fatalf("Expected to be able to encode CvMatrix as png, but got error: %s", err)
 		}
 	})
 

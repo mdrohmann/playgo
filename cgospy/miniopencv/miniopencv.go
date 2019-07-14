@@ -1,4 +1,4 @@
-package cgospy
+package miniopencv
 
 // #cgo pkg-config: opencv
 // #include "opencv-wrapper.hpp"
@@ -10,14 +10,14 @@ import (
 	"unsafe"
 )
 
-// CgoSpy manages a capture session
-type CgoSpy struct {
+// MiniOpenCV manages a capture session
+type MiniOpenCV struct {
 	device int
 }
 
 // New returns a new MiniOpencv
-func New(device int) *CgoSpy {
-	return &CgoSpy{device: device}
+func New(device int) *MiniOpenCV {
+	return &MiniOpenCV{device: device}
 }
 
 // CvMat wraps an OpenCV matrix structure
@@ -67,9 +67,9 @@ func (m *CvMat) At(x, y int) color.Color {
 }
 
 // CaptureCvMat captures a matrix representation of an image.
-func (spy *CgoSpy) CaptureCvMat() (m *CvMat, err error) {
+func (mini *MiniOpenCV) CaptureCvMat() (m *CvMat, err error) {
 	m = &CvMat{ptr: C.newCvMat()}
-	if r := C.captureImage(C.int(spy.device), m.ptr); r != 0 {
+	if r := C.captureImage(C.int(mini.device), m.ptr); r != 0 {
 		err = fmt.Errorf("Error opening the default video capture")
 	}
 	return m, err
