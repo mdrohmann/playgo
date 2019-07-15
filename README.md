@@ -15,8 +15,14 @@ Synchronization on the server size is implemented in two different ways:
 - with channel synchronization (TODO: make it an option to use buffers)
 - lock-free via the `sync/atomic` package.
 
-TODO: make a benchmark comparing, `sync/atomic`, and channel synchronization
-with and without buffers.
+I tried to benchmark the `sync/atomic`, and channel synchronization
+with and without buffers, but noticed that this has to be done without the TCP
+communication.  If I increase the number of parallel connections too much, some
+TCP packets have to be re-sent causing delays that exceed the packet
+synchronization by orders of magnitude. My first impression, however, is that
+there will be hardly any difference for such a simple example.
+
+TODO: Make a useful benchmark
 
 ## CgoSpy
 
@@ -44,9 +50,7 @@ capacity, which for simple slices is set to the capacity of the underlying
 array (minus the start position).  In this case, the capacity would be set to
 `2^28` which does not reflect reality.
 
-It took a while to find the information [about the trick itself](TODO: link to
-github wiki), and the [capacity limitation of array slices](TODO: link to array
-slice definitions).
+It took a while to find the information [about the trick itself](https://github.com/golang/go/wiki/cgo#turning-c-arrays-into-go-slices), and the [capacity limitation of array slices](https://golang.org/ref/spec#Slice_expressions).
 
 ## Conclusion
 
